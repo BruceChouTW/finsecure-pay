@@ -11,8 +11,8 @@ pipeline {
     parameters {
         choice(
             name: 'ACTION',
-            choices: ['DEPLOY', 'ROLLBACK'],
-            description: 'DEPLOY: build and deploy a new version. ROLLBACK: restore a known-good revision.'
+            choices: ['CI_ONLY', 'DEPLOY', 'ROLLBACK'],
+            description: 'CI_ONLY: build and test without EKS deployment. DEPLOY: build and deploy a new version. ROLLBACK: restore a known-good revision.'
         )
 
         string(
@@ -48,7 +48,7 @@ pipeline {
 
         stage('Build') {
             when {
-                expression { params.ACTION == 'DEPLOY' }
+                expression { params.ACTION != 'ROLLBACK' }
             }
             steps {
                 sh 'chmod +x mvnw'
@@ -58,7 +58,7 @@ pipeline {
 
         stage('Test') {
             when {
-                expression { params.ACTION == 'DEPLOY' }
+                expression { params.ACTION != 'ROLLBACK' }
             }
             steps {
                 sh './mvnw -B test'
@@ -67,7 +67,7 @@ pipeline {
 
         stage('Package') {
             when {
-                expression { params.ACTION == 'DEPLOY' }
+                expression { params.ACTION != 'ROLLBACK' }
             }
             steps {
                 sh './mvnw -B -DskipTests package'
@@ -79,7 +79,7 @@ pipeline {
 
         stage('Security Checks') {
             when {
-                expression { params.ACTION == 'DEPLOY' }
+                expression { params.ACTION != 'ROLLBACK' }
             }
             steps {
                 sh '''
@@ -95,7 +95,7 @@ pipeline {
 
         stage('Container Build') {
             when {
-                expression { params.ACTION == 'DEPLOY' }
+                expression { params.ACTION != 'ROLLBACK' }
             }
             steps {
                 sh '''
@@ -109,7 +109,7 @@ pipeline {
 
         stage('Push') {
             when {
-                expression { params.ACTION == 'DEPLOY' }
+                expression { params.ACTION != 'ROLLBACK' }
             }
             steps {
                 withCredentials([
