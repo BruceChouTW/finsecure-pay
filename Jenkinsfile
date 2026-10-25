@@ -83,6 +83,7 @@ pipeline {
             }
             steps {
                 sh '''
+                    set +x
                     set -eu
                     mkdir -p reports
 
@@ -103,6 +104,7 @@ pipeline {
             }
             steps {
                 sh '''
+                    set +x
                     set -eu
                     mkdir -p reports
 
@@ -131,12 +133,42 @@ pipeline {
             }
         }
 
+        stage('Secret Detection') {
+            when {
+                expression { params.ACTION != 'ROLLBACK' }
+            }
+            steps {
+                sh '''
+                    set +x
+                    set -eu
+
+                    mkdir -p reports
+
+                    echo "Scanning workspace for exposed secrets..."
+
+                    trivy fs \
+                    --timeout 15m \
+                    --scanners secret \
+                    --skip-dirs .git \
+                    --skip-dirs target \
+                    --skip-dirs reports \
+                    --format json \
+                    --output reports/trivy-secrets.json \
+                    --exit-code 1 \
+                    .
+
+                    echo "Secret scan passed: no secrets detected."
+                '''
+            }
+        }
+
         stage('Security Gate') {
             when {
                 expression { params.ACTION != 'ROLLBACK' }
             }
             steps {
                 sh '''
+                    set +x
                     set -eu
 
                     echo "Gate 1: Block fixable CRITICAL dependency vulnerabilities..."
@@ -186,6 +218,7 @@ pipeline {
             }
             steps {
                 sh '''
+                    set +x
                     set -eu
                     mkdir -p reports
 
@@ -254,6 +287,7 @@ pipeline {
                     )
                 ]) {
                     sh '''
+                        set +x
                         set -eu
 
                         export DOCKER_CONFIG="$(mktemp -d)"
@@ -292,6 +326,7 @@ pipeline {
                         "KUBECONFIG=${env.WORKSPACE}/.kube/config"
                     ]) {
                         sh '''
+                            set +x
                             set -eu
 
                             mkdir -p "$(dirname "$KUBECONFIG")"
@@ -400,6 +435,7 @@ pipeline {
                         "KUBECONFIG=${env.WORKSPACE}/.kube/config"
                     ]) {
                         sh '''
+                            set +x
                             set -eu
 
                             mkdir -p "$(dirname "$KUBECONFIG")"
@@ -464,6 +500,7 @@ pipeline {
                         "ROLLBACK_REVISION=${params.ROLLBACK_TO_REVISION}"
                     ]) {
                         sh '''
+                            set +x
                             set -eu
 
                             case "$ROLLBACK_REVISION" in
