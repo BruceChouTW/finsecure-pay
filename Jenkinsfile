@@ -196,11 +196,13 @@ pipeline {
                     echo "Scanning image: $IMAGE"
 
                     trivy image \
+                    --timeout 15m \
                     --scanners vuln,secret \
                     --exit-code 0 \
                     "$IMAGE"
 
                     trivy image \
+                    --timeout 15m \
                     --scanners vuln,secret \
                     --format json \
                     --output reports/trivy-image.json \
@@ -210,6 +212,7 @@ pipeline {
                     echo "Generating SBOM..."
 
                     trivy image \
+                    --timeout 15m \
                     --format cyclonedx \
                     --list-all-pkgs \
                     --output reports/finsecure-pay-sbom.cdx.json \
@@ -218,6 +221,7 @@ pipeline {
                     echo "Blocking fixable CRITICAL image vulnerabilities..."
 
                     trivy image \
+                    --timeout 15m \
                     --scanners vuln \
                     --severity CRITICAL \
                     --ignore-unfixed \
@@ -227,6 +231,7 @@ pipeline {
                     echo "Blocking detected secrets inside the image..."
 
                     trivy image \
+                    --timeout 15m \
                     --scanners secret \
                     --exit-code 1 \
                     "$IMAGE"
