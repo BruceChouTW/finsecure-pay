@@ -112,6 +112,7 @@ pipeline {
                     --scanners vuln,secret,misconfig \
                     --skip-dirs .git \
                     --skip-dirs target \
+                    --skip-dirs reports \
                     --exit-code 0 \
                     .
 
@@ -119,6 +120,7 @@ pipeline {
                     --scanners vuln,secret,misconfig \
                     --skip-dirs .git \
                     --skip-dirs target \
+                    --skip-dirs reports \
                     --format json \
                     --output reports/trivy-fs.json \
                     --exit-code 0 \
@@ -145,6 +147,7 @@ pipeline {
                     --ignore-unfixed \
                     --skip-dirs .git \
                     --skip-dirs target \
+                    --skip-dirs reports \
                     --exit-code 1 \
                     .
 
@@ -154,6 +157,7 @@ pipeline {
                     --scanners secret \
                     --skip-dirs .git \
                     --skip-dirs target \
+                    --skip-dirs reports \
                     --exit-code 1 \
                     .
 
