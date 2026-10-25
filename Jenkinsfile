@@ -77,18 +77,87 @@ pipeline {
             }
         }
 
+        stage('Code Security Analysis') {
+            when {
+                expression { params.ACTION != 'ROLLBACK' }
+            }
+            steps {
+                sh '''
+                    set -eu
+                    mkdir -p reports
+
+                    ./mvnw -B \
+                    com.github.spotbugs:spotbugs-maven-plugin:4.10.5.0:spotbugs
+
+                    test -s target/spotbugsXml.xml
+                    cp target/spotbugsXml.xml reports/spotbugs.xml
+
+                    echo "SpotBugs report generated: reports/spotbugs.xml"
+                '''
+            }
+        }
+
         stage('Security Checks') {
             when {
                 expression { params.ACTION != 'ROLLBACK' }
             }
             steps {
                 sh '''
+                    set -eu
+                    mkdir -p reports
+
+                    echo "Scanning source files and dependencies..."
+
                     trivy fs \
-                      --scanners vuln,secret,misconfig \
-                      --exit-code 0 \
-                      --format table \
-                      --skip-dirs .git \
-                      .
+                    --scanners vuln,secret,misconfig \
+                    --skip-dirs .git \
+                    --skip-dirs target \
+                    --exit-code 0 \
+                    .
+
+                    trivy fs \
+                    --scanners vuln,secret,misconfig \
+                    --skip-dirs .git \
+                    --skip-dirs target \
+                    --format json \
+                    --output reports/trivy-fs.json \
+                    --exit-code 0 \
+                    .
+
+                    echo "Trivy filesystem report: reports/trivy-fs.json"
+                '''
+            }
+        }
+
+        stage('Security Gate') {
+            when {
+                expression { params.ACTION != 'ROLLBACK' }
+            }
+            steps {
+                sh '''
+                    set -eu
+
+                    echo "Gate 1: Block fixable CRITICAL dependency vulnerabilities..."
+
+                    trivy fs \
+                    --scanners vuln \
+                    --severity CRITICAL \
+                    --ignore-unfixed \
+                    --skip-dirs .git \
+                    --skip-dirs target \
+                    --exit-code 1 \
+                    .
+
+                    echo "Gate 2: Block detected secrets..."
+
+                    trivy fs \
+                    --scanners secret \
+                    --skip-dirs .git \
+                    --skip-dirs target \
+                    --exit-code 1 \
+                    .
+
+                    echo "Security gates passed."
                 '''
             }
         }
@@ -103,6 +172,62 @@ pipeline {
                       -t ${DOCKER_IMAGE}:${BUILD_NUMBER} \
                       -t ${DOCKER_IMAGE}:latest \
                       .
+                '''
+            }
+        }
+
+        stage('Container Image Scan') {
+            when {
+                expression { params.ACTION != 'ROLLBACK' }
+            }
+            steps {
+                sh '''
+                    set -eu
+                    mkdir -p reports
+
+                    IMAGE="${DOCKER_IMAGE}:${BUILD_NUMBER}"
+
+                    docker image inspect "$IMAGE" >/dev/null
+
+                    echo "Scanning image: $IMAGE"
+
+                    trivy image \
+                    --scanners vuln,secret \
+                    --exit-code 0 \
+                    "$IMAGE"
+
+                    trivy image \
+                    --scanners vuln,secret \
+                    --format json \
+                    --output reports/trivy-image.json \
+                    --exit-code 0 \
+                    "$IMAGE"
+
+                    echo "Generating SBOM..."
+
+                    trivy image \
+                    --format cyclonedx \
+                    --list-all-pkgs \
+                    --output reports/finsecure-pay-sbom.cdx.json \
+                    "$IMAGE"
+
+                    echo "Blocking fixable CRITICAL image vulnerabilities..."
+
+                    trivy image \
+                    --scanners vuln \
+                    --severity CRITICAL \
+                    --ignore-unfixed \
+                    --exit-code 1 \
+                    "$IMAGE"
+
+                    echo "Blocking detected secrets inside the image..."
+
+                    trivy image \
+                    --scanners secret \
+                    --exit-code 1 \
+                    "$IMAGE"
+
+                    echo "Container image security checks passed."
                 '''
             }
         }
@@ -400,8 +525,9 @@ pipeline {
             )
 
             archiveArtifacts(
-                artifacts: 'target/*.jar',
-                allowEmptyArchive: true
+                artifacts: 'target/*.jar,target/spotbugsXml.xml,reports/**/*',
+                allowEmptyArchive: true,
+                fingerprint: true
             )
         }
 
