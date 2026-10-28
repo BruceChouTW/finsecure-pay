@@ -575,6 +575,29 @@ pipeline {
                 allowEmptyArchive: true,
                 fingerprint: true
             )
+
+            script {
+                def buildResult = currentBuild.currentResult
+
+                try {
+                    emailext(
+                        to: 'qurixchou@gmail.com',
+                        subject: "${buildResult}: FinSecure Pay CI/CD - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                        body: """FinSecure Pay CI/CD pipeline has completed.
+
+    Build Result: ${buildResult}
+    Job: ${env.JOB_NAME}
+    Build Number: ${env.BUILD_NUMBER}
+    Branch: ${env.BRANCH_NAME ?: 'N/A'}
+    Build URL: ${env.BUILD_URL}
+
+    Please open the Jenkins build URL for details.
+    """
+                    )
+                } catch (err) {
+                    echo "WARNING: Email notification failed: ${err}"
+                }
+            }
         }
 
         success {
