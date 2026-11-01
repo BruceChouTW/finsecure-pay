@@ -1,11 +1,5 @@
 # Troubleshooting Guide
 
-## Find the repository root
-
-```bash
-cd /mnt/c/Users/qurix/Capstone_Assignment/finsecure-pay
-```
-
 ## Application health or metrics endpoint is unavailable
 
 Check container status first:
@@ -110,3 +104,38 @@ git ls-files .env.monitoring
 ```
 
 The secret environment file should be ignored and untracked. Review the staged file list before committing; do not add credentials, `.env.monitoring`, Jenkins home data, Docker socket files, or runtime data.
+
+### Check AWS and Kubernetes access
+
+Run these checks when the EKS environment is intended to be used:
+
+```bash
+aws sts get-caller-identity
+aws eks describe-cluster \
+  --region us-east-1 \
+  --name finsecure-capstone
+```
+
+The cluster description should be checked for its status and Kubernetes version. The recorded cluster status was `ACTIVE` and its Kubernetes version was `1.37`.
+
+Configure or refresh the local kubeconfig context:
+
+```bash
+aws eks update-kubeconfig \
+  --region us-east-1 \
+  --name finsecure-capstone
+```
+
+Check the cluster and worker nodes:
+
+```bash
+kubectl cluster-info
+kubectl get nodes -o wide
+```
+
+If `kubectl get nodes` returns no nodes, or the node group is absent, do not proceed as if the application deployment is currently available. Check the managed node groups and their status:
+
+```bash
+aws eks list-nodegroups \
+  --region us-east-1 \
+  --cluster-name finsecure-capstone
