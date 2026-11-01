@@ -1,0 +1,25 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: finsecure-capstone
+  region: us-east-1
+  version: "1.37"
+
+vpc:
+  nat:
+    gateway: Disable
+  clusterEndpoints:
+    publicAccess: true
+    privateAccess: false
+  publicAccessCIDRs:
+    - "14.100.122.146/32"
+
+managedNodeGroups:
+  - name: finsecure-workers
+    instanceType: c7i-flex.large
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 1
+    volumeSize: 20
+    privateNetworking: false
