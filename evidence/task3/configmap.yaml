@@ -1,0 +1,14 @@
+apiVersion: v1
+data:
+  SERVER_PORT: "8080"
+  SPRING_APPLICATION_NAME: finsecure-pay
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"SERVER_PORT":"8080","SPRING_APPLICATION_NAME":"finsecure-pay"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"finsecure-pay-config","namespace":"default"}}
+  creationTimestamp: "2026-10-24T09:14:27Z"
+  name: finsecure-pay-config
+  namespace: default
+  resourceVersion: "21706"
+  uid: 8e1b6ec4-c6b8-4a20-bb82-d1f67e1053fb

@@ -1,0 +1,10 @@
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/finsecure-pay   2/2     2            2           55m
+
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/finsecure-pay-7d89966989-6tvzr   1/1     Running   0          41m
+pod/finsecure-pay-7d89966989-clw8n   1/1     Running   0          22m
+
+NAME                    TYPE           CLUSTER-IP      EXTERNAL-IP                                                               PORT(S)        AGE
+service/finsecure-pay   LoadBalancer   10.100.159.63   ae6e7cea427b1401fae6446b97e0c3ad-1285998811.us-east-1.elb.amazonaws.com   80:32226/TCP   55m
+service/kubernetes      ClusterIP      10.100.0.1      <none>                                                                    443/TCP        3h
